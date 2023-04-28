@@ -40,3 +40,5 @@ fi
 
 # Disable dcvserver for now. Will be enabled based on the user choice
 sudo systemctl disable dcvserver   
+
+/usr/local/bin/start-desktop.sh ubuntu DCV
