@@ -14,9 +14,8 @@ if [[ $# -gt 1 ]]; then
     fi
 fi
 
-# Update apt and install NICE DCV
-sudo apt install -y /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-server_*.ubuntu2004.deb
-sudo apt install -y /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-web-*.ubuntu2004.deb
+# Install NICE DCV, if another process is using apt wait for it to complete (300 seconds) before timing out
+sudo apt install -o DPkg::Lock::Timeout=300 -y /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-server_*.ubuntu2004.deb /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-web-*.ubuntu2004.deb
 sudo usermod -aG video dcv
 
 # use DCV authentication
@@ -39,6 +38,4 @@ then
 fi
 
 # Disable dcvserver for now. Will be enabled based on the user choice
-sudo systemctl disable dcvserver   
-
-/usr/local/bin/start-desktop.sh ubuntu DCV
+sudo systemctl disable dcvserver
