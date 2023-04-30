@@ -1,19 +1,30 @@
-#!/bin/bash -ex
+#!/bin/bash
 
-# Installs NICE DCV if users choose to enable it
+# This script will be triggered as an ARM template extension to default matlab to point at license server, and define DDUX Env
+# Example Use case: sh /usr/local/bin/install-extensions.sh variables('licenseServer') MATLAB:AZURE:V1 parameters('EnableNiceDCV') parameters('adminUsername') parameters('NiceDCVLicenseServer') 
 
-# Flag to check if the license server address for NICE DCV is valid or not 
-IS_VALID_ADDRESS=false
-ADMIN_USERNAME=$1
-RLM_LICENSE_SERVER=$2
+license_server=$1
+ddux_tag=$2
+access_protocol=$3
+admin_username=$4
+rlm_license_server=$5
 
-if [[ $# -gt 1 ]]; then
-    # If the input string contains '@', we assume it is a valid address
-    if [[ ${RLM_LICENSE_SERVER} =~ "@" ]]; then
-        IS_VALID_ADDRESS=true
-    fi
+#startup accelerator. 
+nohup /usr/local/matlab/bin/glnxa64/MATLABStartupAccelerator 64 /usr/local/matlab /usr/local/etc/msa/msa.ini /tmp/startup_accelerator.log &> /dev/null  &
+
+if [ "${license_server}" != "mhlm" ]; then
+    # remove the online licensing default
+    sudo rm -f /usr/local/matlab/licenses/license_info.xml
+
+    # default matlab to point at license server port@server
+    echo "export MLM_LICENSE_FILE=${license_server}" | sudo tee -a /etc/profile.d/mlmlicensefile.sh
 fi
 
+# define DDUX Env
+echo "export MW_CONTEXT_TAGS=${ddux_tag}" > /etc/profile.d/dduxvars.sh
+
+if [ "${access_protocol}" = "DCV" ]; then
+    # Configure NICE DCV in the VM
 # Install NICE DCV, if another process is using apt wait for it to complete (300 seconds) before timing out
 sudo apt install -o DPkg::Lock::Timeout=300 -y /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-server_*.ubuntu2004.deb /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-web-*.ubuntu2004.deb
 sudo usermod -aG video dcv
@@ -22,7 +33,7 @@ sudo usermod -aG video dcv
 sudo sed -i 's/#authentication="none"/authentication="system"/' /etc/dcv/dcv.conf
 
 # configure automatic console sessions on service startup
-sudo sed -i 's/^#owner.*$/owner='"${ADMIN_USERNAME}"'/' /etc/dcv/dcv.conf
+sudo sed -i 's/^#owner.*$/owner='"${admin_username}"'/' /etc/dcv/dcv.conf
 sudo sed -i 's/^#create-session.*$/create-session = true/' /etc/dcv/dcv.conf
 
 # configure max 1 session
@@ -30,12 +41,9 @@ sudo sed -i 's/^#max-concurrent-clients.*/max-concurrent-clients = 1/' /etc/dcv/
 
 # enable file sharing
 sudo sed -i 's/^#storage-root.*/storage-root="%home%"/' /etc/dcv/dcv.conf
-
-# If user has input NICE DCV RLM server address then set this config in the dcv configuration file
-if ${IS_VALID_ADDRESS} 
-then
-    sudo sed -i 's/^#license-file.*/license-file='"${RLM_LICENSE_SERVER}"'/' /etc/dcv/dcv.conf
-fi
-
 # Disable dcvserver for now. Will be enabled based on the user choice
 sudo systemctl disable dcvserver
+fi
+
+# Start desktop
+/usr/local/bin/start-desktop.sh ${admin_username} ${access_protocol}
