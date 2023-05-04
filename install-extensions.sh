@@ -23,7 +23,7 @@ fi
 # define DDUX Env
 echo "export MW_CONTEXT_TAGS=${ddux_tag}" > /etc/profile.d/dduxvars.sh
 
-if [ "${access_protocol}" = "DCV" ]; then
+if [ "${access_protocol}" = "Yes" ]; then
     # Configure NICE DCV in the VM
 # Install NICE DCV, if another process is using apt wait for it to complete (300 seconds) before timing out
 sudo apt install -o DPkg::Lock::Timeout=300 -y /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-server_*.ubuntu2004.deb /usr/local/bin/nice-dcv-*-ubuntu2004-x86_64/nice-dcv-web-*.ubuntu2004.deb
