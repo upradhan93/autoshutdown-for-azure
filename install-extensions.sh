@@ -47,3 +47,5 @@ fi
 
 # Start desktop
 /usr/local/bin/start-desktop.sh ${admin_username} ${access_protocol}
+
+nohup sudo unattended-upgrade -d
